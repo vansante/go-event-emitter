@@ -10,18 +10,6 @@ type Emitter struct {
 	listenerMutex sync.Mutex
 }
 
-type HandleFunc func(arguments ...interface{})
-type Listener struct {
-	handler HandleFunc
-	once    bool
-}
-
-type CaptureFunc func(eventName string, arguments ...interface{})
-type Capturer struct {
-	handler CaptureFunc
-	once    bool
-}
-
 func NewEmitter() (em *Emitter) {
 	em = &Emitter{
 		listeners: make(map[string][]*Listener),

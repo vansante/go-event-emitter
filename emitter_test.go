@@ -6,26 +6,31 @@ import (
 )
 
 func TestEmitter(t *testing.T) {
+	var em EventEmitter
+	var ob Observable
+
 	e := NewEmitter()
+	em = e
+	ob = e
 
 	var ASingle, AListener, capture, captureOnce int
 
-	listener := e.AddListener("test event A", func(args ...interface{}) {
+	listener := ob.AddListener("test event A", func(args ...interface{}) {
 		verifyArgs(t, args)
 		AListener++
 	})
 
-	e.ListenOnce("test event A", func(args ...interface{}){
+	ob.ListenOnce("test event A", func(args ...interface{}){
 		verifyArgs(t, args)
 		ASingle++
 	})
 
-	capturer := e.AddCapturer(func(event string, args ...interface{}) {
+	capturer := ob.AddCapturer(func(event string, args ...interface{}) {
 		verifyArgs(t, args)
 		capture++
 	})
 
-	e.CaptureOnce(func(event string, args ...interface{}) {
+	ob.CaptureOnce(func(event string, args ...interface{}) {
 		verifyArgs(t, args)
 
 		captureOnce++
@@ -35,18 +40,18 @@ func TestEmitter(t *testing.T) {
 		}
 	})
 
-	e.EmitEvent("test event A", "test", 123, true)
-	e.EmitEvent("test event B", "test", 123, true)
-	e.EmitEvent("test event C", "test", 123, true)
-	e.EmitEvent("test event A", "test", 123, true)
-	e.EmitEvent("test event A", "test", 123, true)
+	em.EmitEvent("test event A", "test", 123, true)
+	em.EmitEvent("test event B", "test", 123, true)
+	em.EmitEvent("test event C", "test", 123, true)
+	em.EmitEvent("test event A", "test", 123, true)
+	em.EmitEvent("test event A", "test", 123, true)
 
-	e.RemoveListener("test event A", listener)
-	e.RemoveCapturer(capturer)
+	ob.RemoveListener("test event A", listener)
+	ob.RemoveCapturer(capturer)
 
-	e.EmitEvent("Testing 123", 1)
-	e.EmitEvent("test event A", 1)
-	e.EmitEvent("Wow", 2)
+	em.EmitEvent("Testing 123", 1)
+	em.EmitEvent("test event A", 1)
+	em.EmitEvent("Wow", 2)
 
 	// Events are async, so wait a bit for them to finish
 	time.Sleep(time.Second)
