@@ -36,7 +36,7 @@ func (em *Emitter) EmitEvent(event string, arguments ...interface{}) {
 	for index := range em.listeners[event] {
 		adjustedIndex = index - removed
 
-		go em.listeners[event][adjustedIndex].handler(arguments)
+		go em.listeners[event][adjustedIndex].handler(arguments...)
 		if em.listeners[event][adjustedIndex].once {
 			em.removeListenerAtIndex(event, adjustedIndex)
 			removed++
@@ -47,7 +47,7 @@ func (em *Emitter) EmitEvent(event string, arguments ...interface{}) {
 	for index := range em.capturers {
 		adjustedIndex = index - removed
 
-		go em.capturers[adjustedIndex].handler(event, arguments)
+		go em.capturers[adjustedIndex].handler(event, arguments...)
 		if em.capturers[adjustedIndex].once {
 			em.removeCapturerAtIndex(adjustedIndex)
 			removed++
