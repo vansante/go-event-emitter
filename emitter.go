@@ -85,7 +85,7 @@ func (em *Emitter) AddCapturer(handler CaptureFunc) {
 	})
 }
 
-func (em *Emitter) CaptureOnce(event string, handler CaptureFunc) {
+func (em *Emitter) CaptureOnce(handler CaptureFunc) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
@@ -121,7 +121,7 @@ func (em *Emitter) RemoveAllListeners() {
 	em.listeners = make(map[string][]*Listener)
 }
 
-func (em *Emitter) RemoveCapturer(event string, handler CaptureFunc) {
+func (em *Emitter) RemoveCapturer(handler CaptureFunc) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
