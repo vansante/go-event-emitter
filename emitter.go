@@ -1,6 +1,8 @@
 package eventemitter
 
-import "sync"
+import (
+	"sync"
+)
 
 type Emitter struct {
 	capturers     []*Capturer
@@ -55,52 +57,59 @@ func (em *Emitter) EmitEvent(event string, arguments ...interface{}) {
 	}
 }
 
-func (em *Emitter) AddListener(event string, handler HandleFunc) {
+func (em *Emitter) AddListener(event string, handler HandleFunc) (listener *Listener) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
-	em.listeners[event] = append(em.listeners[event], &Listener{
+	listener = &Listener{
 		handler: handler,
 		once:    false,
-	})
+	}
+	em.listeners[event] = append(em.listeners[event], listener)
+	return
 }
 
-func (em *Emitter) ListenOnce(event string, handler HandleFunc) {
+func (em *Emitter) ListenOnce(event string, handler HandleFunc) (listener *Listener) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
-
-	em.listeners[event] = append(em.listeners[event], &Listener{
+	listener = &Listener{
 		handler: handler,
 		once:    true,
-	})
+	}
+	em.listeners[event] = append(em.listeners[event], listener)
+	return
 }
 
-func (em *Emitter) AddCapturer(handler CaptureFunc) {
+func (em *Emitter) AddCapturer(handler CaptureFunc) (capturer *Capturer) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
-	em.capturers = append(em.capturers, &Capturer{
+	capturer = &Capturer{
 		handler: handler,
 		once:    false,
-	})
+	}
+	em.capturers = append(em.capturers, capturer)
+	return
 }
 
-func (em *Emitter) CaptureOnce(handler CaptureFunc) {
+func (em *Emitter) CaptureOnce(handler CaptureFunc) (capturer *Capturer) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
-	em.capturers = append(em.capturers, &Capturer{
+	capturer = &Capturer{
 		handler: handler,
 		once:    true,
-	})
+	}
+	em.capturers = append(em.capturers, capturer)
+	return
 }
 
-func (em *Emitter) RemoveListener(event string, handler HandleFunc) {
+func (em *Emitter) RemoveListener(event string, listener *Listener) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
-	for index, listener := range em.listeners[event] {
-		if &listener.handler == &handler {
+	for index, list := range em.listeners[event] {
+		if list == listener {
 			em.removeListenerAtIndex(event, index)
 			return
 		}
@@ -121,12 +130,12 @@ func (em *Emitter) RemoveAllListeners() {
 	em.listeners = make(map[string][]*Listener)
 }
 
-func (em *Emitter) RemoveCapturer(handler CaptureFunc) {
+func (em *Emitter) RemoveCapturer(capturer *Capturer) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
-	for index, capturer := range em.capturers {
-		if &capturer.handler == &handler {
+	for index, capt := range em.capturers {
+		if capt == capturer {
 			em.removeCapturerAtIndex(index)
 			return
 		}

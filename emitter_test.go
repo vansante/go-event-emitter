@@ -10,7 +10,7 @@ func TestEmitter(t *testing.T) {
 
 	var ASingle, AListener, capture, captureOnce int
 
-	e.AddListener("test event A", func(args ...interface{}) {
+	listener := e.AddListener("test event A", func(args ...interface{}) {
 		verifyArgs(t, args)
 		AListener++
 	})
@@ -20,14 +20,13 @@ func TestEmitter(t *testing.T) {
 		ASingle++
 	})
 
-	e.AddCapturer(func(event string, args ...interface{}) {
+	capturer := e.AddCapturer(func(event string, args ...interface{}) {
 		verifyArgs(t, args)
 		capture++
 	})
 
 	e.CaptureOnce(func(event string, args ...interface{}) {
 		verifyArgs(t, args)
-		t.Log(args)
 
 		captureOnce++
 		if event != "test event A" {
@@ -41,6 +40,13 @@ func TestEmitter(t *testing.T) {
 	e.EmitEvent("test event C", "test", 123, true)
 	e.EmitEvent("test event A", "test", 123, true)
 	e.EmitEvent("test event A", "test", 123, true)
+
+	e.RemoveListener("test event A", listener)
+	e.RemoveCapturer(capturer)
+
+	e.EmitEvent("Testing 123", 1)
+	e.EmitEvent("test event A", 1)
+	e.EmitEvent("Wow", 2)
 
 	// Events are async, so wait a bit for them to finish
 	time.Sleep(time.Second)
