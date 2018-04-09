@@ -67,7 +67,7 @@ func (em *Emitter) AddListener(event EventID, handler HandleFunc) (listener *Lis
 		once:    false,
 	}
 	em.listeners[event] = append(em.listeners[event], listener)
-	return
+	return listener
 }
 
 func (em *Emitter) ListenOnce(event EventID, handler HandleFunc) (listener *Listener) {
@@ -79,7 +79,7 @@ func (em *Emitter) ListenOnce(event EventID, handler HandleFunc) (listener *List
 		once:    true,
 	}
 	em.listeners[event] = append(em.listeners[event], listener)
-	return
+	return listener
 }
 
 func (em *Emitter) AddCapturer(handler CaptureFunc) (capturer *Capturer) {
@@ -91,7 +91,7 @@ func (em *Emitter) AddCapturer(handler CaptureFunc) (capturer *Capturer) {
 		once:    false,
 	}
 	em.capturers = append(em.capturers, capturer)
-	return
+	return capturer
 }
 
 func (em *Emitter) CaptureOnce(handler CaptureFunc) (capturer *Capturer) {
@@ -103,7 +103,7 @@ func (em *Emitter) CaptureOnce(handler CaptureFunc) (capturer *Capturer) {
 		once:    true,
 	}
 	em.capturers = append(em.capturers, capturer)
-	return
+	return capturer
 }
 
 func (em *Emitter) RemoveListener(event EventID, listener *Listener) {
