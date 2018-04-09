@@ -5,11 +5,19 @@ import (
 	"time"
 )
 
-func TestEmitter(t *testing.T) {
+func TestEmitterSynced(t *testing.T) {
+	testEmitter(t, false)
+}
+
+func TestEmitterAsync(t *testing.T) {
+	testEmitter(t, true)
+}
+
+func testEmitter(t *testing.T, async bool) {
 	var em EventEmitter
 	var ob Observable
 
-	e := NewEmitter()
+	e := NewEmitter(async)
 	em = e
 	ob = e
 
@@ -25,12 +33,12 @@ func TestEmitter(t *testing.T) {
 		ASingle++
 	})
 
-	capturer := ob.AddCapturer(func(event string, args ...interface{}) {
+	capturer := ob.AddCapturer(func(event EventID, args ...interface{}) {
 		verifyArgs(t, args)
 		capture++
 	})
 
-	ob.CaptureOnce(func(event string, args ...interface{}) {
+	ob.CaptureOnce(func(event EventID, args ...interface{}) {
 		verifyArgs(t, args)
 
 		captureOnce++
@@ -53,8 +61,10 @@ func TestEmitter(t *testing.T) {
 	em.EmitEvent("test event A", 1)
 	em.EmitEvent("Wow", 2)
 
-	// Events are async, so wait a bit for them to finish
-	time.Sleep(time.Second)
+	if async {
+		// Events are async, so wait a bit for them to finish
+		time.Sleep(time.Millisecond * 100)
+	}
 
 	if ASingle != 1 {
 		t.Log("Single A event not triggered right", ASingle)
