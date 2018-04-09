@@ -6,21 +6,24 @@ import (
 
 type Emitter struct {
 	async         bool
+	stopOnError   bool
 	capturers     []*Capturer
-	listeners     map[EventID][]*Listener
+	listeners     map[EventType][]*Listener
 	listenerMutex sync.Mutex
 }
 
-// NewEmitter creates a new event emitter that implements the Observable interface. Async determines whether events listeners fire in separate goroutines or not.
+// NewEmitter creates a new event emitter that implements the Observable interface.
+// Async determines whether events listeners fire in separate goroutines or not.
 func NewEmitter(async bool) (em *Emitter) {
 	em = &Emitter{
-		async:     async,
-		listeners: make(map[EventID][]*Listener),
+		async:       async,
+		listeners:   make(map[EventType][]*Listener),
 	}
 	return em
 }
 
-func (em *Emitter) EmitEvent(event EventID, arguments ...interface{}) {
+// EmitEvent emits the given event to all listeners and capturers
+func (em *Emitter) EmitEvent(event EventType, arguments ...interface{}) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
@@ -58,7 +61,8 @@ func (em *Emitter) EmitEvent(event EventID, arguments ...interface{}) {
 	}
 }
 
-func (em *Emitter) AddListener(event EventID, handler HandleFunc) (listener *Listener) {
+// AddListener adds a listener for the given event type
+func (em *Emitter) AddListener(event EventType, handler HandleFunc) (listener *Listener) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
@@ -70,7 +74,8 @@ func (em *Emitter) AddListener(event EventID, handler HandleFunc) (listener *Lis
 	return listener
 }
 
-func (em *Emitter) ListenOnce(event EventID, handler HandleFunc) (listener *Listener) {
+// ListenOnce adds a listener for the given event type that removes itself after it has been fired once
+func (em *Emitter) ListenOnce(event EventType, handler HandleFunc) (listener *Listener) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
@@ -82,6 +87,7 @@ func (em *Emitter) ListenOnce(event EventID, handler HandleFunc) (listener *List
 	return listener
 }
 
+// AddCapturer adds an event capturer for all events
 func (em *Emitter) AddCapturer(handler CaptureFunc) (capturer *Capturer) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
@@ -94,6 +100,7 @@ func (em *Emitter) AddCapturer(handler CaptureFunc) (capturer *Capturer) {
 	return capturer
 }
 
+// CaptureOnce adds an event capturer for all events that removes itself after it has been fired once
 func (em *Emitter) CaptureOnce(handler CaptureFunc) (capturer *Capturer) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
@@ -106,7 +113,8 @@ func (em *Emitter) CaptureOnce(handler CaptureFunc) (capturer *Capturer) {
 	return capturer
 }
 
-func (em *Emitter) RemoveListener(event EventID, listener *Listener) {
+// RemoveListener removes the registered given listener for the given event
+func (em *Emitter) RemoveListener(event EventType, listener *Listener) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
@@ -118,20 +126,23 @@ func (em *Emitter) RemoveListener(event EventID, listener *Listener) {
 	}
 }
 
-func (em *Emitter) RemoveAllListenersForEvent(event EventID) {
+// RemoveAllListenersForEvent removes all registered listeners for a given event type
+func (em *Emitter) RemoveAllListenersForEvent(event EventType) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
 	em.listeners[event] = make([]*Listener, 0)
 }
 
+// RemoveAllListeners removes all registered listeners for all event types
 func (em *Emitter) RemoveAllListeners() {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
 
-	em.listeners = make(map[EventID][]*Listener)
+	em.listeners = make(map[EventType][]*Listener)
 }
 
+// RemoveCapturer removes the given capturer
 func (em *Emitter) RemoveCapturer(capturer *Capturer) {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
@@ -144,6 +155,7 @@ func (em *Emitter) RemoveCapturer(capturer *Capturer) {
 	}
 }
 
+// RemoveAllCapturers removes all registered capturers
 func (em *Emitter) RemoveAllCapturers() {
 	em.listenerMutex.Lock()
 	defer em.listenerMutex.Unlock()
@@ -151,7 +163,7 @@ func (em *Emitter) RemoveAllCapturers() {
 	em.capturers = make([]*Capturer, 0)
 }
 
-func (em *Emitter) removeListenerAtIndex(event EventID, index int) {
+func (em *Emitter) removeListenerAtIndex(event EventType, index int) {
 	copy(em.listeners[event][index:], em.listeners[event][index+1:])
 	em.listeners[event][len(em.listeners[event])-1] = nil
 	em.listeners[event] = em.listeners[event][:len(em.listeners[event])-1]

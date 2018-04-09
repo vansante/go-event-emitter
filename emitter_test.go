@@ -33,12 +33,12 @@ func testEmitter(t *testing.T, async bool) {
 		ASingle++
 	})
 
-	capturer := ob.AddCapturer(func(event EventID, args ...interface{}) {
+	capturer := ob.AddCapturer(func(event EventType, args ...interface{}) {
 		verifyArgs(t, args)
 		capture++
 	})
 
-	ob.CaptureOnce(func(event EventID, args ...interface{}) {
+	ob.CaptureOnce(func(event EventType, args ...interface{}) {
 		verifyArgs(t, args)
 
 		captureOnce++
