@@ -6,7 +6,6 @@ import (
 
 type Emitter struct {
 	async         bool
-	stopOnError   bool
 	capturers     []*Capturer
 	listeners     map[EventType][]*Listener
 	listenerMutex sync.Mutex
@@ -16,8 +15,8 @@ type Emitter struct {
 // Async determines whether events listeners fire in separate goroutines or not.
 func NewEmitter(async bool) (em *Emitter) {
 	em = &Emitter{
-		async:       async,
-		listeners:   make(map[EventType][]*Listener),
+		async:     async,
+		listeners: make(map[EventType][]*Listener),
 	}
 	return em
 }
