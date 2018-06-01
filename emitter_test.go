@@ -21,14 +21,14 @@ func testEmitter(t *testing.T, async bool) {
 	em = e
 	ob = e
 
-	var ASingle, AListener, capture, captureOnce int
+	var ASingle, AListener, capture int
 
 	listener := ob.AddListener("test event A", func(args ...interface{}) {
 		verifyArgs(t, args)
 		AListener++
 	})
 
-	ob.ListenOnce("test event A", func(args ...interface{}){
+	ob.ListenOnce("test event A", func(args ...interface{}) {
 		verifyArgs(t, args)
 		ASingle++
 	})
@@ -36,16 +36,6 @@ func testEmitter(t *testing.T, async bool) {
 	capturer := ob.AddCapturer(func(event EventType, args ...interface{}) {
 		verifyArgs(t, args)
 		capture++
-	})
-
-	ob.CaptureOnce(func(event EventType, args ...interface{}) {
-		verifyArgs(t, args)
-
-		captureOnce++
-		if event != "test event A" {
-			t.Log("wrong event for captureOnce")
-			t.Fail()
-		}
 	})
 
 	em.EmitEvent("test event A", "test", 123, true)
@@ -78,15 +68,11 @@ func testEmitter(t *testing.T, async bool) {
 		t.Log("Capture all not triggered right", capture)
 		t.Fail()
 	}
-	if captureOnce != 1 {
-		t.Log("Capture once not triggered right", captureOnce)
-		t.Fail()
-	}
 }
 
 func verifyArgs(t *testing.T, args []interface{}) {
 	if len(args) != 3 {
-		t.Log("Too few arguments", args)
+		t.Logf("Too few arguments (%d) %#v", len(args), args)
 		t.Fail()
 		return
 	}
@@ -106,6 +92,39 @@ func verifyArgs(t *testing.T, args []interface{}) {
 	b, ok := args[2].(bool)
 	if !ok || b != true {
 		t.Log("Wrong argument for 3:true!")
+		t.Fail()
+	}
+}
+
+func TestEmitNonAsyncRecursive(t *testing.T) {
+	e := NewEmitter(false)
+
+	var rootFired int
+	e.AddListener("rootevent", func(args ...interface{}) {
+		rootFired++
+		e.EmitEvent("subevent", 1, 2, 3)
+		e.EmitEvent("subevent", 1, 2, 3)
+	})
+
+	var subFired int
+	e.AddListener("subevent", func(args ...interface{}) {
+		if len(args) != 3 {
+			t.Logf("Too few arguments (%d) %#v", len(args), args)
+			t.Fail()
+			return
+		}
+		subFired++
+	})
+
+	e.EmitEvent("rootevent", "test")
+
+	if rootFired != 1 {
+		t.Log("Root event all not triggered right", rootFired)
+		t.Fail()
+	}
+
+	if subFired != 2 {
+		t.Log("Sub event all not triggered right", subFired)
 		t.Fail()
 	}
 }
