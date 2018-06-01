@@ -23,40 +23,67 @@ func NewEmitter(async bool) (em *Emitter) {
 
 // EmitEvent emits the given event to all listeners and capturers
 func (em *Emitter) EmitEvent(event EventType, arguments ...interface{}) {
-	em.listenerMutex.Lock()
-	defer em.listenerMutex.Unlock()
+	// If we have no listeners for this event, skip
+	if len(em.listeners[event]) > 0 {
+		em.listenerMutex.Lock()
+		// Create a handlers slice copy to store the handlers we have to call outside the lock
+		handlers := make([]HandleFunc, len(em.listeners[event]))
 
-	removed := 0
-	var adjustedIndex int
-	for index := range em.listeners[event] {
-		adjustedIndex = index - removed
+		removed := 0
+		var adjustedIndex int
 
-		if em.async {
-			go em.listeners[event][adjustedIndex].handler(arguments...)
-		} else {
-			em.listeners[event][adjustedIndex].handler(arguments...)
+		for index := range em.listeners[event] {
+			adjustedIndex = index - removed
+
+			handlers[index] = em.listeners[event][adjustedIndex].handler
+
+			if em.listeners[event][adjustedIndex].once {
+				em.removeListenerAtIndex(event, adjustedIndex)
+				removed++
+			}
 		}
+		em.listenerMutex.Unlock()
 
-		if em.listeners[event][adjustedIndex].once {
-			em.removeListenerAtIndex(event, adjustedIndex)
-			removed++
+		// Call each handler outside the lock, so that these in turn can emit events if needed
+		for _, handler := range handlers {
+			if em.async {
+				go handler(arguments...)
+				continue
+			}
+			handler(arguments...)
 		}
 	}
 
-	removed = 0
+	// If we have no capturers, stop now
+	if len(em.capturers) == 0 {
+		return
+	}
+
+	em.listenerMutex.Lock()
+	// Create a capturers slice copy to store the capturers we have to call outside the lock
+	capturers := make([]CaptureFunc, len(em.capturers))
+
+	removed := 0
+	var adjustedIndex int
+
 	for index := range em.capturers {
 		adjustedIndex = index - removed
 
-		if em.async {
-			go em.capturers[adjustedIndex].handler(event, arguments...)
-		} else {
-			em.capturers[adjustedIndex].handler(event, arguments...)
-		}
-
+		capturers[index] = em.capturers[adjustedIndex].handler
 		if em.capturers[adjustedIndex].once {
 			em.removeCapturerAtIndex(adjustedIndex)
 			removed++
 		}
+	}
+	em.listenerMutex.Unlock()
+
+	// Call each capturer outside the lock, so that these in turn can emit events if needed
+	for _, capturer := range capturers {
+		if em.async {
+			go capturer(event, arguments...)
+			continue
+		}
+		capturer(event, arguments...)
 	}
 }
 
