@@ -4,18 +4,13 @@ executors:
   go:
     docker:
       - image: circleci/golang:1.11
-    environment:
-      GOPATH: /home/circleci/go
 
 jobs:
   codequality:
     executor: go
     steps:
       - checkout
-      - run: go get golang.org/x/lint/golint                    # Download & install golint
-      - run: "! gofmt -d . | read || ( gofmt -d . && exit 1 )"  # Run go format
-      - run: ~/go/bin/golint -set_exit_status ./...             # Run go linter
-      - run: go vet ./...                                       # Run go vet
+      - run: make verify
 
   test:
     executor: go
@@ -23,7 +18,7 @@ jobs:
       - checkout
       - run: go get github.com/jstemmer/go-junit-report
       - run: mkdir -p /tmp/test-results
-      - run: go test -v -race ./... | ~/go/bin/go-junit-report > /tmp/test-results/spec.xml
+      - run: go test -v -race ./... | go-junit-report > /tmp/test-results/spec.xml
       - store_test_results:
           path: /tmp/test-results
 
