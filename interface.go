@@ -4,6 +4,7 @@ type EventType string
 
 // HandleFunc is a handler function for a given event type
 type HandleFunc func(arguments ...interface{})
+
 // Listener is a container struct used to remove the listener
 type Listener struct {
 	handler HandleFunc
@@ -11,6 +12,7 @@ type Listener struct {
 
 // CaptureFunc is a capturer function that can capture all emitted events
 type CaptureFunc func(event EventType, arguments ...interface{})
+
 // Capturer is a container struct used to remove the capturer
 type Capturer struct {
 	handler CaptureFunc
