@@ -1,6 +1,7 @@
 package eventemitter
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -21,21 +22,21 @@ func testEmitter(t *testing.T, async bool) {
 	em = e
 	ob = e
 
-	var ASingle, AListener, capture int
+	var ASingle, AListener, capture int32
 
 	listener := ob.AddListener("test event A", func(args ...interface{}) {
 		verifyArgs(t, args)
-		AListener++
+		atomic.AddInt32(&AListener, 1)
 	})
 
 	ob.ListenOnce("test event A", func(args ...interface{}) {
 		verifyArgs(t, args)
-		ASingle++
+		atomic.AddInt32(&ASingle, 1)
 	})
 
 	capturer := ob.AddCapturer(func(event EventType, args ...interface{}) {
 		verifyArgs(t, args)
-		capture++
+		atomic.AddInt32(&capture, 1)
 	})
 
 	em.EmitEvent("test event A", "test", 123, true)
@@ -53,19 +54,19 @@ func testEmitter(t *testing.T, async bool) {
 
 	if async {
 		// Events are async, so wait a bit for them to finish
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 200)
 	}
 
-	if ASingle != 1 {
-		t.Log("Single A event not triggered right", ASingle)
+	if atomic.LoadInt32(&ASingle) != 1 {
+		t.Log("Single A event not triggered right", atomic.LoadInt32(&ASingle))
 		t.Fail()
 	}
-	if AListener != 3 {
-		t.Log("A event not triggered right", AListener)
+	if atomic.LoadInt32(&AListener) != 3 {
+		t.Log("A event not triggered right", atomic.LoadInt32(&AListener))
 		t.Fail()
 	}
-	if capture != 5 {
-		t.Log("Capture all not triggered right", capture)
+	if atomic.LoadInt32(&capture) != 5 {
+		t.Log("Capture all not triggered right", atomic.LoadInt32(&capture))
 		t.Fail()
 	}
 }
