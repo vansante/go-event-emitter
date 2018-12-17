@@ -6,8 +6,7 @@ import (
 
 // Emitter is the base struct which manages event subscriptions and calls all registered handlers on event emits.
 type Emitter struct {
-	sync.RWMutex
-
+	mu            sync.RWMutex
 	async         bool
 	capturers     []*Capturer
 	listeners     map[EventType][]*Listener
@@ -28,32 +27,36 @@ func NewEmitter(async bool) (em *Emitter) {
 // EmitEvent emits the given event to all listeners and capturers
 func (em *Emitter) EmitEvent(event EventType, arguments ...interface{}) {
 	// If we have no single listeners for this event, skip
+	em.mu.RLock()
 	if len(em.listenersOnce) > 0 {
+		em.mu.RUnlock()
 		// Get a full lock, we are changing a map
-		em.Lock()
+		em.mu.Lock()
 		// Copy the slice
 		listenersOnce := em.listenersOnce[event]
 		// Create new empty slice
 		em.listenersOnce[event] = make([]*Listener, 0)
-		em.Unlock()
+		em.mu.Unlock()
 
 		// No lock needed, we are working with an inaccessible copy
 		em.emitListenerEvents(listenersOnce, arguments)
+	} else {
+		em.mu.RUnlock()
 	}
 
+	em.mu.RLock()
 	// If we have no listeners for this event, skip
 	if len(em.listeners[event]) > 0 {
-		em.RLock()
 		em.emitListenerEvents(em.listeners[event], arguments)
-		em.RUnlock()
 	}
+	em.mu.RUnlock()
 
+	em.mu.RLock()
 	// If we have no capturers, skip
 	if len(em.capturers) > 0 {
-		em.RLock()
 		em.emitCapturerEvents(em.capturers, event, arguments)
-		em.RUnlock()
 	}
+	em.mu.RUnlock()
 }
 
 func (em *Emitter) emitListenerEvents(listeners []*Listener, arguments []interface{}) {
@@ -78,8 +81,8 @@ func (em *Emitter) emitCapturerEvents(capturers []*Capturer, event EventType, ar
 
 // AddListener adds a listener for the given event type
 func (em *Emitter) AddListener(event EventType, handler HandleFunc) (listener *Listener) {
-	em.Lock()
-	defer em.Unlock()
+	em.mu.Lock()
+	defer em.mu.Unlock()
 
 	listener = &Listener{
 		handler: handler,
@@ -90,8 +93,8 @@ func (em *Emitter) AddListener(event EventType, handler HandleFunc) (listener *L
 
 // ListenOnce adds a listener for the given event type that removes itself after it has been fired once
 func (em *Emitter) ListenOnce(event EventType, handler HandleFunc) (listener *Listener) {
-	em.Lock()
-	defer em.Unlock()
+	em.mu.Lock()
+	defer em.mu.Unlock()
 
 	listener = &Listener{
 		handler: handler,
@@ -102,8 +105,8 @@ func (em *Emitter) ListenOnce(event EventType, handler HandleFunc) (listener *Li
 
 // AddCapturer adds an event capturer for all events
 func (em *Emitter) AddCapturer(handler CaptureFunc) (capturer *Capturer) {
-	em.Lock()
-	defer em.Unlock()
+	em.mu.Lock()
+	defer em.mu.Unlock()
 
 	capturer = &Capturer{
 		handler: handler,
@@ -114,8 +117,8 @@ func (em *Emitter) AddCapturer(handler CaptureFunc) (capturer *Capturer) {
 
 // RemoveListener removes the registered given listener for the given event
 func (em *Emitter) RemoveListener(event EventType, listener *Listener) {
-	em.Lock()
-	defer em.Unlock()
+	em.mu.Lock()
+	defer em.mu.Unlock()
 
 	for index, list := range em.listeners[event] {
 		if list == listener {
@@ -135,16 +138,16 @@ func (em *Emitter) RemoveListener(event EventType, listener *Listener) {
 
 // RemoveAllListenersForEvent removes all registered listeners for a given event type
 func (em *Emitter) RemoveAllListenersForEvent(event EventType) {
-	em.Lock()
-	defer em.Unlock()
+	em.mu.Lock()
+	defer em.mu.Unlock()
 
 	em.listeners[event] = make([]*Listener, 0)
 }
 
 // RemoveAllListeners removes all registered listeners for all event types
 func (em *Emitter) RemoveAllListeners() {
-	em.Lock()
-	defer em.Unlock()
+	em.mu.Lock()
+	defer em.mu.Unlock()
 
 	em.listeners = make(map[EventType][]*Listener)
 	em.listenersOnce = make(map[EventType][]*Listener)
@@ -152,8 +155,8 @@ func (em *Emitter) RemoveAllListeners() {
 
 // RemoveCapturer removes the given capturer
 func (em *Emitter) RemoveCapturer(capturer *Capturer) {
-	em.Lock()
-	defer em.Unlock()
+	em.mu.Lock()
+	defer em.mu.Unlock()
 
 	for index, capt := range em.capturers {
 		if capt == capturer {
@@ -165,8 +168,8 @@ func (em *Emitter) RemoveCapturer(capturer *Capturer) {
 
 // RemoveAllCapturers removes all registered capturers
 func (em *Emitter) RemoveAllCapturers() {
-	em.Lock()
-	defer em.Unlock()
+	em.mu.Lock()
+	defer em.mu.Unlock()
 
 	em.capturers = make([]*Capturer, 0)
 }
