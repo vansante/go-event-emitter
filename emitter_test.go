@@ -1,6 +1,7 @@
 package eventemitter
 
 import (
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -128,4 +129,29 @@ func TestEmitNonAsyncRecursive(t *testing.T) {
 		t.Log("Sub event all not triggered right", subFired)
 		t.Fail()
 	}
+}
+
+func TestMultipleRoutineEmitListen(t *testing.T) {
+	e := NewEmitter(true)
+
+	wg := sync.WaitGroup{}
+	wg.Add(20)
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			e.EmitEvent(EventType("blurp"), 1, 2, 3)
+			e.EmitEvent(EventType("worst"), 321)
+			wg.Done()
+		}()
+	}
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			e.AddListener(EventType("blurp"), func(arguments ...interface{}) {})
+			e.AddCapturer(func(event EventType, arguments ...interface{}) {})
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
 }
