@@ -4,6 +4,7 @@ import (
 	"sync"
 )
 
+// Emitter is the base struct which manages event subscriptions and calls all registered handlers on event emits.
 type Emitter struct {
 	sync.RWMutex
 

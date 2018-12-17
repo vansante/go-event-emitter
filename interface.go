@@ -1,5 +1,6 @@
 package eventemitter
 
+// EventType is a type of event, each type of event should have a different type
 type EventType string
 
 // HandleFunc is a handler function for a given event type
@@ -32,6 +33,7 @@ type Observable interface {
 	RemoveCapturer(capturer *Capturer)
 }
 
+// EventEmitter is the interface which allows implementers to emit events
 type EventEmitter interface {
 	// EmitEvent emits the given event to all listeners and capturers
 	EmitEvent(event EventType, arguments ...interface{})
