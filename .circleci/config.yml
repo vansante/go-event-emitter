@@ -12,10 +12,7 @@ jobs:
     executor: go
     steps:
       - checkout
-      - run: go get golang.org/x/lint/golint                    # Download & install golint
-      - run: "! gofmt -d . | read || ( gofmt -d . && exit 1 )"  # Run go format
-      - run: ~/go/bin/golint -set_exit_status ./...             # Run go linter
-      - run: go vet ./...                                       # Run go vet
+      - run: make verify
 
   test:
     executor: go
